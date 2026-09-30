@@ -1,14 +1,13 @@
 import os
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-
 from dotenv import load_dotenv 
 
-#Cargar las variables de entorno
+# Cargar las variables de entorno
 load_dotenv()
 
-#crear instancia
-app =  Flask(__name__)
+# Crear instancia
+app = Flask(__name__)
 
 # Configuración de la base de datos PostgreSQL
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
@@ -37,20 +36,18 @@ def index():
     posts = Post.query.all()
     categories = Category.query.all()
     return render_template('index.html', posts=posts, categories=categories)
-#Actualizar post
-@app.route('/post/update/<int:id>', methods=['GET','POST'])
-def update_post(id):
+
+# Eliminar post
+@app.route('/posts/delete/<int:id>')
+def delete_post(id):
     post = Post.query.get(id)
-    if request.method == 'POST':
-        post.title = request.form['title']
-        post.category_id = request.form['category_id']
-        post.content = request.form['content']
+    if post:
+        db.session.delete(post)
         db.session.commit()
-        return redirect(url_for('index'))
-    
-    categories = Category.query.all()
-    return render_template('update_post.html', post=post, categories=categories)
-#Ruta /post crear un nuevo post
+    return redirect(url_for('index'))
+
+# Ruta para crear un nuevo post
+
 @app.route('/post/new', methods=['GET','POST'])
 def add_post():
     if request.method == 'POST':
@@ -63,9 +60,29 @@ def add_post():
 
         return redirect(url_for('index'))
     
-    #Aqui sigue si es GET
+    # Aqui sigue si es GET
     categories = Category.query.all()
     return render_template('create_post.html', categories=categories)
+
+# Ruta para actualizar un post (Nueva ruta agregada)
+@app.route('/post/update/<int:id>', methods=['GET', 'POST'])
+def update_post(id):
+    # Obtenemos el post de la base de datos por su ID
+    post = Post.query.get(id)
+    
+    if request.method == 'POST':
+        # Actualizamos los atributos del post con los datos del formulario
+        post.title = request.form['title']
+        post.content = request.form['content']
+        post.category_id = request.form.get('category_id')
+        
+        # Guardamos los cambios en la base de datos
+        db.session.commit()
+        return redirect(url_for('index'))
+        
+    # Si la petición es GET, obtenemos las categorías y mostramos la plantilla
+    categories = Category.query.all()
+    return render_template('update_post.html', post=post, categories=categories)
 
 if __name__ == '__main__':
     app.run(debug=True)
